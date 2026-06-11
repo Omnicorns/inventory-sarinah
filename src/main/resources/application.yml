@@ -1,0 +1,40 @@
+server:
+  port: 8042
+
+spring:
+  application:
+    name: stokku-inventory-api
+
+  # ---- Default: H2 in-memory (zero setup, data resets on restart) ----
+  datasource:
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+    driver-class-name: org.postgresql.Driver
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate.format_sql: true
+
+  # ---- For MySQL, comment the H2 block above and use this ----
+  #  datasource:
+  #    url: jdbc:mysql://localhost:3306/stokku?createDatabaseIfNotExist=true
+  #    username: root
+  #    password: yourpassword
+  #  jpa:
+  #    hibernate:
+  #      ddl-auto: update
+  #    database-platform: org.hibernate.dialect.MySQLDialect
+
+app:
+  jwt:
+    # CHANGE THIS in production. Must be >= 32 chars for HS256.
+    secret: "change-this-secret-key-stokku-inventory-please-rotate-in-prod-0123456789"
+    expiration-ms: 86400000   # 24 hours
+
+logging:
+  level:
+    org.springframework.security: INFO
