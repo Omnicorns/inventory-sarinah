@@ -27,10 +27,11 @@ public class ProductService {
 
     public record ProductView(Long id, String sku, String name, String category,
                               String unit, BigDecimal price, int stock, int minStock,
-                              int available, String status) {}
+                              int available, String status, boolean requestable) {}
 
     public record CreateProduct(String sku, String name, Long categoryId, String unit,
-                                BigDecimal price, Integer stock, Integer minStock) {}
+                                BigDecimal price, Integer stock, Integer minStock,
+                                Boolean requestable) {}
 
     private String status(Product p) {
         if (p.getStock() <= 0) return "HABIS";
@@ -42,7 +43,7 @@ public class ProductService {
         return new ProductView(p.getId(), p.getSku(), p.getName(),
                 p.getCategory() != null ? p.getCategory().getName() : null,
                 p.getUnit(), p.getPrice(), p.getStock(), p.getMinStock(),
-                stockService.available(p), status(p));
+                stockService.available(p), status(p), p.getRequestable() != null && p.getRequestable());
     }
 
     public List<ProductView> list(String search) {
@@ -79,6 +80,7 @@ public class ProductService {
                 .price(dto.price() == null ? BigDecimal.ZERO : dto.price())
                 .stock(dto.stock() == null ? 0 : dto.stock())
                 .minStock(dto.minStock() == null ? 0 : dto.minStock())
+                .requestable(dto.requestable() == null ? true : dto.requestable())
                 .build();
         return toView(productRepo.save(p));
     }
@@ -94,6 +96,7 @@ public class ProductService {
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Kategori tidak ditemukan"));
             p.setCategory(cat);
         }
+        if (dto.requestable() != null) p.setRequestable(dto.requestable());
         // Catatan: stok TIDAK diubah lewat sini. Gunakan endpoint penyesuaian/barang-masuk.
         return toView(productRepo.save(p));
     }

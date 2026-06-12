@@ -48,6 +48,10 @@ public class Product {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean requestable = true;
+
     @PrePersist
     void onCreate() {
         this.createdAt = LocalDateTime.now();

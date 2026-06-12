@@ -70,8 +70,11 @@ public class RequestService {
 
     @Transactional
     public RequestView create(AuthUser me, CreateRequest dto) {
+
         if (dto.items() == null || dto.items().isEmpty())
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Minimal satu barang");
+
+
         User requester = currentUser(me);
 
         ItemRequest req = ItemRequest.builder()
@@ -91,6 +94,9 @@ public class RequestService {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Jumlah harus > 0");
             Product p = productRepo.findById(line.productId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Produk tidak ditemukan: " + line.productId()));
+            if (p.getRequestable() == null || !p.getRequestable())
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Produk " + p.getName() + " hanya untuk pencatatan stok, tidak bisa diminta");
             itemRepo.save(RequestItem.builder()
                     .request(req).product(p).requestedQty(line.qty()).approvedQty(0).build());
         }
