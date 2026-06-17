@@ -1,0 +1,155 @@
+### Login admin (salin "token" dari response ke variabel @token)
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{ "email": "admin@stokku.test", "password": "password" }
+
+### Login staff
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{ "email": "budi@stokku.test", "password": "password" }
+
+@token = PASTE_TOKEN_DISINI
+
+### Lihat siapa saya
+GET http://localhost:8080/api/auth/me
+Authorization: Bearer {{token}}
+
+### Daftar produk (+ stok tersedia & status)
+GET http://localhost:8080/api/products
+Authorization: Bearer {{token}}
+
+### Produk stok menipis/habis
+GET http://localhost:8080/api/products/low-stock
+Authorization: Bearer {{token}}
+
+### Tambah produk (admin)
+POST http://localhost:8080/api/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "sku": "SKU-1402", "name": "Webcam 1080p", "categoryId": 1, "unit": "unit", "price": 320000, "stock": 31, "minStock": 5 }
+
+### Barang masuk dari supplier (admin)
+POST http://localhost:8080/api/stock/incoming
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "productId": 3, "quantity": 50, "note": "Restock mouse" }
+
+### Penyesuaian stok (admin) - tipe: TAMBAH | KURANGI | SET
+POST http://localhost:8080/api/adjustments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "productId": 1, "type": "KURANGI", "quantity": 4, "reason": "Barang rusak", "note": "Hasil cek 9 Jun" }
+
+### Staff mengajukan permintaan (pakai token STAFF)
+POST http://localhost:8080/api/requests
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "purpose": "Penggantian perangkat tim support",
+  "neededDate": "2026-06-15",
+  "items": [ { "productId": 4, "qty": 2 }, { "productId": 1, "qty": 3 } ] }
+
+### Lihat daftar permintaan (admin: semua, staff: miliknya)
+GET http://localhost:8080/api/requests
+Authorization: Bearer {{token}}
+
+### Detail satu permintaan
+GET http://localhost:8080/api/requests/1
+Authorization: Bearer {{token}}
+
+### Approve (admin) - body opsional untuk approve sebagian
+POST http://localhost:8080/api/requests/1/approve
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "items": [ { "requestItemId": 1, "approvedQty": 2 } ] }
+
+### Tolak (admin)
+POST http://localhost:8080/api/requests/2/reject
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "reason": "Stok tidak cukup" }
+
+### Serah-terima -> stok fisik berkurang + struk terbit (admin)
+POST http://localhost:8080/api/requests/1/deliver
+Authorization: Bearer {{token}}
+
+### Lihat struk dari sebuah permintaan
+GET http://localhost:8080/api/requests/1/slip
+Authorization: Bearer {{token}}
+
+### Laporan ringkasan (admin)
+GET http://localhost:8080/api/reports/summary
+Authorization: Bearer {{token}}
+
+### Laporan: barang keluar per bulan
+GET http://localhost:8080/api/reports/outgoing-monthly
+Authorization: Bearer {{token}}
+
+### Laporan: produk paling sering diminta
+GET http://localhost:8080/api/reports/top-products?limit=5
+Authorization: Bearer {{token}}
+
+### Laporan: pemakaian per divisi
+GET http://localhost:8080/api/reports/by-division
+Authorization: Bearer {{token}}
+
+### --- Penyesuaian baru (update) ---
+
+### Admin: daftar semua user
+GET http://localhost:8080/api/users
+Authorization: Bearer {{token}}
+
+### Admin: tambah user baru
+POST http://localhost:8080/api/users
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "name": "Sari Dewi", "email": "sari@stokku.test", "password": "rahasia123", "role": "STAFF", "division": "Marketing" }
+
+### Ganti password sendiri (semua role)
+PATCH http://localhost:8080/api/users/me/password
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "oldPassword": "password", "newPassword": "passwordBaru1" }
+
+### Laporan kartu stok (saldo awal + saldo berjalan)
+GET http://localhost:8080/api/reports/stock-card?productId=2&from=2026-06-01&to=2026-06-10
+Authorization: Bearer {{token}}
+
+### --- Divisi (update v3) ---
+
+### Login user divisi GA / Retail (untuk uji scoping)
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{ "email": "sari@stokku.test", "password": "password" }
+# atau rudi@stokku.test (Retail)
+
+### Daftar divisi (semua role; untuk dropdown)
+GET http://localhost:8080/api/divisions
+Authorization: Bearer {{token}}
+
+### Admin: tambah divisi
+POST http://localhost:8080/api/divisions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "name": "Finance" }
+
+### Admin: tambah user dengan divisi (pakai divisionId dari GET /api/divisions)
+POST http://localhost:8080/api/users
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "name": "Andi", "email": "andi@stokku.test", "password": "rahasia123", "role": "STAFF", "divisionId": 2 }
+
+### Uji scoping: login sebagai sari@ (GA) lalu GET /api/requests
+### -> hanya permintaan divisi GA yang muncul; permintaan Retail tidak terlihat.
