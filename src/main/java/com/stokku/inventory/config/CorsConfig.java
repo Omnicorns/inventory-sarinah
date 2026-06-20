@@ -3,29 +3,39 @@ package com.stokku.inventory.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
+import org.springframework.web.cors.CorsConfigurationSource;
 import java.util.List;
 
-/** Izinkan frontend (React dev server) memanggil API dari origin berbeda. */
 @Configuration
 public class CorsConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration cfg = new CorsConfiguration();
-        // Sesuaikan dengan origin frontend-mu; tambah domain produksi nanti.
-        cfg.setAllowedOrigins(List.of(
-                "http://localhost:5173",   // Vite (React)
-                "http://localhost:3000"    // CRA / Next dev
-        ));
-        cfg.setAllowedMethods(List.of("GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"));
-        cfg.setAllowedHeaders(List.of("Authorization", "Content-Type"));
-        cfg.setMaxAge(3600L);
+        CorsConfiguration c = new CorsConfiguration();
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/api/**", cfg);
-        return source;
+        c.setAllowedOrigins(List.of(
+                "http://localhost:3000",
+                "http://localhost:5173",
+                "http://localhost:8042",
+                "http://127.0.0.1:8042",
+                "https://satudata.sarinah.com"
+        ));
+
+        c.setAllowedMethods(List.of(
+                "GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"
+        ));
+
+        // FIX: jangan hanya Authorization dan Content-Type
+        c.setAllowedHeaders(List.of("*"));
+
+        c.setExposedHeaders(List.of("Authorization"));
+        c.setAllowCredentials(true);
+        c.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource src = new UrlBasedCorsConfigurationSource();
+        src.registerCorsConfiguration("/**", c);
+
+        return src;
     }
 }
