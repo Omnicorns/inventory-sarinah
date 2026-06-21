@@ -29,32 +29,36 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
-                .headers(h -> h.frameOptions(f -> f.disable()))
+                .headers(h -> h.frameOptions(f -> f.disable())) // agar H2 console bisa dibuka
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // 1) Preflight CORS harus lolos sebelum cek token
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
+                        // 2) File statis React + halaman SPA -> bebas akses
                         .requestMatchers(
                                 "/",
                                 "/index.html",
                                 "/favicon.ico",
                                 "/manifest.json",
                                 "/asset-manifest.json",
-                                "/logo*.png",
+                                "/robots.txt",
+                                "/logo192.png",
+                                "/logo512.png",
                                 "/sarinah.png",
                                 "/sarinah-galeri.jpg",
                                 "/static/**"
                         ).permitAll()
 
+                        // 3) Login & H2 console bebas
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
 
-                        .requestMatchers(HttpMethod.GET, "/api/products/**", "/api/categories/**").authenticated()
-
+                        // 4) Sisanya API butuh login
+                        .requestMatchers(HttpMethod.GET, "/api/products/*", "/api/categories/*").authenticated()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
-
         return http.build();
     }
 
