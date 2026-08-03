@@ -25,13 +25,14 @@ public class AuthService {
     private final PasswordEncoder encoder;
     private final JwtService jwtService;
     private final PostLoginPromisService postLoginPromisService;
-    private  ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
 
-    public AuthService(UserRepository userRepo, PasswordEncoder encoder, JwtService jwtService, PostLoginPromisService postLoginPromisService) {
+    public AuthService(UserRepository userRepo, PasswordEncoder encoder, JwtService jwtService, PostLoginPromisService postLoginPromisService,ObjectMapper objectMapper) {
         this.userRepo = userRepo;
         this.encoder = encoder;
         this.jwtService = jwtService;
         this.postLoginPromisService = postLoginPromisService;
+        this.objectMapper = objectMapper;
 
     }
 
