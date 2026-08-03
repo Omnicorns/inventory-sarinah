@@ -30,7 +30,7 @@ public class ProductService {
                               int available, String status) {}
 
     public record CreateProduct(String sku, String name, Long categoryId, String unit,
-                                BigDecimal price, Integer stock, Integer minStock) {}
+                                BigDecimal price, Integer stock, Integer minStock,Boolean requestable) {}
 
     private String status(Product p) {
         if (p.getStock() <= 0) return "HABIS";
@@ -79,6 +79,7 @@ public class ProductService {
                 .price(dto.price() == null ? BigDecimal.ZERO : dto.price())
                 .stock(dto.stock() == null ? 0 : dto.stock())
                 .minStock(dto.minStock() == null ? 0 : dto.minStock())
+                .requestable(dto.requestable)
                 .build();
         return toView(productRepo.save(p));
     }
