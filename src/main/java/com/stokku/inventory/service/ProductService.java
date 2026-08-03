@@ -47,7 +47,7 @@ public class ProductService {
 
     public List<ProductView> list(String search) {
         List<Product> products = (search == null || search.isBlank())
-                ? productRepo.findAllByRequestableFalse()
+                ? productRepo.findAll()
                 : productRepo.findByNameContainingIgnoreCaseOrSkuContainingIgnoreCase(search, search);
         return products.stream().map(this::toView).toList();
     }
