@@ -12,6 +12,10 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
 
+
+
+
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -19,10 +23,25 @@ spring:
     properties:
       hibernate.format_sql: true
 
+
+
+
 app:
   jwt:
     secret: "change-this-secret-key-stokku-inventory-please-rotate-in-prod-0123456789"
     expiration-ms: 86400000
+
+sarinah-portal:
+  base-url: https://satudata.sarinah.com/api/auth/login
+  api-key: f3a1d2b4c5e6f7890a1b2c3d
+
+http:
+  client:
+    max-connections: 300
+    max-per-route: 100
+    connection-request-timeout: 5000
+    connect-timeout: 10000
+    read-timeout: 60000
 
 logging:
   level:
