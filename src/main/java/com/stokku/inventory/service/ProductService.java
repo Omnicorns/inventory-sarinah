@@ -90,6 +90,7 @@ public class ProductService {
         if (dto.unit() != null) p.setUnit(dto.unit());
         if (dto.price() != null) p.setPrice(dto.price());
         if (dto.minStock() != null) p.setMinStock(dto.minStock());
+        if (dto.requestable !=null) p.setRequestable(dto.requestable);
         if (dto.categoryId() != null) {
             Category cat = categoryRepo.findById(dto.categoryId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Kategori tidak ditemukan"));
