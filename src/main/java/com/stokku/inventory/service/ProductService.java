@@ -1,14 +1,19 @@
 package com.stokku.inventory.service;
 
 import com.stokku.inventory.model.Category;
+import com.stokku.inventory.model.MovementType;
 import com.stokku.inventory.model.Product;
+import com.stokku.inventory.model.StockMovement;
 import com.stokku.inventory.repo.CategoryRepository;
 import com.stokku.inventory.repo.ProductRepository;
+import com.stokku.inventory.repo.StockMovementRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -17,12 +22,14 @@ public class ProductService {
     private final ProductRepository productRepo;
     private final CategoryRepository categoryRepo;
     private final StockService stockService;
+    private final StockMovementRepository stockMovement;
 
     public ProductService(ProductRepository productRepo, CategoryRepository categoryRepo,
-                          StockService stockService) {
+                          StockService stockService, StockMovementRepository stockMovement) {
         this.productRepo = productRepo;
         this.categoryRepo = categoryRepo;
         this.stockService = stockService;
+        this.stockMovement = stockMovement;
     }
 
     public record ProductView(Long id, String sku, String name, String category,
@@ -67,21 +74,59 @@ public class ProductService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Produk tidak ditemukan"));
     }
 
+    @Transactional
     public ProductView create(CreateProduct dto) {
-        if (productRepo.existsBySku(dto.sku()))
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "SKU sudah dipakai: " + dto.sku());
-        Category cat = dto.categoryId() == null ? null :
-                categoryRepo.findById(dto.categoryId())
-                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Kategori tidak ditemukan"));
-        Product p = Product.builder()
-                .sku(dto.sku()).name(dto.name()).category(cat)
+        if (productRepo.existsBySku(dto.sku())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "SKU sudah dipakai: " + dto.sku()
+            );
+        }
+
+        Category category = dto.categoryId() == null
+                ? null
+                : categoryRepo.findById(dto.categoryId())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Kategori tidak ditemukan"
+                ));
+
+        int initialStock = dto.stock() == null ? 0 : dto.stock();
+
+        if (initialStock < 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Stok awal tidak boleh kurang dari 0"
+            );
+        }
+
+        Product product = Product.builder()
+                .sku(dto.sku())
+                .name(dto.name())
+                .category(category)
                 .unit(dto.unit() == null ? "unit" : dto.unit())
                 .price(dto.price() == null ? BigDecimal.ZERO : dto.price())
-                .stock(dto.stock() == null ? 0 : dto.stock())
+                .stock(initialStock)
                 .minStock(dto.minStock() == null ? 0 : dto.minStock())
-                .requestable(dto.requestable)
+                .requestable(dto.requestable())
                 .build();
-        return toView(productRepo.save(p));
+
+        Product savedProduct = productRepo.save(product);
+
+        // Catat stok awal ke kartu stok
+        if (initialStock > 0) {
+            StockMovement movement = StockMovement.builder()
+                    .product(savedProduct)
+                    .quantity(initialStock)
+                    .type(MovementType.MASUK)
+                    .reason("Stok awal produk")
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            stockMovement.save(movement);
+        }
+
+        return toView(savedProduct);
     }
 
     public ProductView update(Long id, CreateProduct dto) {
