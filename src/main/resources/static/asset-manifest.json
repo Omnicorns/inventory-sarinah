@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/inventory-sarinah/static/css/main.e6c13ad2.css",
-    "main.js": "/inventory-sarinah/static/js/main.5776d9cc.js",
+    "main.js": "/inventory-sarinah/static/js/main.0f467dc6.js",
     "static/js/453.f8a484e6.chunk.js": "/inventory-sarinah/static/js/453.f8a484e6.chunk.js",
     "index.html": "/inventory-sarinah/index.html",
     "main.e6c13ad2.css.map": "/inventory-sarinah/static/css/main.e6c13ad2.css.map",
-    "main.5776d9cc.js.map": "/inventory-sarinah/static/js/main.5776d9cc.js.map",
+    "main.0f467dc6.js.map": "/inventory-sarinah/static/js/main.0f467dc6.js.map",
     "453.f8a484e6.chunk.js.map": "/inventory-sarinah/static/js/453.f8a484e6.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.e6c13ad2.css",
-    "static/js/main.5776d9cc.js"
+    "static/js/main.0f467dc6.js"
   ]
 }
