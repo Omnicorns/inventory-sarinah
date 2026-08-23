@@ -24,6 +24,11 @@ public class ProductController {
         return productService.list(search);
     }
 
+    @GetMapping
+    public List<ProductService.ProductView> listRequestable() {
+        return productService.listRequestable();
+    }
+
     @GetMapping("/low-stock")
     public List<ProductService.ProductView> lowStock() {
         return productService.lowStock();

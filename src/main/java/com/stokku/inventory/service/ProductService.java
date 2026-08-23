@@ -59,6 +59,11 @@ public class ProductService {
         return products.stream().map(this::toView).toList();
     }
 
+    public List <ProductView>listRequestable(){
+        List<Product> products = productRepo.findAllByRequestableFalse();
+        return products.stream().map(this::toView).toList();
+    }
+
     public List<ProductView> lowStock() {
         return productRepo.findAll().stream()
                 .filter(p -> p.getStock() <= p.getMinStock())
