@@ -34,7 +34,7 @@ public class ProductService {
 
     public record ProductView(Long id, String sku, String name, String category,
                               String unit, BigDecimal price, int stock, int minStock,
-                              int available, String status) {}
+                              int available, String status,Boolean requestable) {}
 
     public record CreateProduct(String sku, String name, Long categoryId, String unit,
                                 BigDecimal price, Integer stock, Integer minStock,Boolean requestable) {}
@@ -49,19 +49,36 @@ public class ProductService {
         return new ProductView(p.getId(), p.getSku(), p.getName(),
                 p.getCategory() != null ? p.getCategory().getName() : null,
                 p.getUnit(), p.getPrice(), p.getStock(), p.getMinStock(),
-                stockService.available(p), status(p));
+                stockService.available(p), status(p),
+                Boolean.TRUE.equals(p.getRequestable()));
     }
 
     public List<ProductView> list(String search) {
         List<Product> products = (search == null || search.isBlank())
                 ? productRepo.findAll()
-                : productRepo.findByNameContainingIgnoreCaseOrSkuContainingIgnoreCase(search, search);
-        return products.stream().map(this::toView).toList();
+                : productRepo
+                .findByNameContainingIgnoreCaseOrSkuContainingIgnoreCase(
+                        search.trim(),
+                        search.trim()
+                );
+
+        return products.stream()
+                .map(this::toView)
+                .toList();
     }
 
-    public List <ProductView>listRequestable(){
-        List<Product> products = productRepo.findAllByRequestableFalse();
-        return products.stream().map(this::toView).toList();
+    public List<ProductView> listRequestable(String search) {
+        List<Product> products = (search == null || search.isBlank())
+                ? productRepo.findAllByRequestableTrue()
+                : productRepo
+                .findByRequestableTrueAndNameContainingIgnoreCaseOrRequestableTrueAndSkuContainingIgnoreCase(
+                        search.trim(),
+                        search.trim()
+                );
+
+        return products.stream()
+                .map(this::toView)
+                .toList();
     }
 
     public List<ProductView> lowStock() {

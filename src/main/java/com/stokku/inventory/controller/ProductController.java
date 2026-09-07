@@ -24,9 +24,12 @@ public class ProductController {
         return productService.list(search);
     }
 
-    @GetMapping
-    public List<ProductService.ProductView> listRequestable() {
-        return productService.listRequestable();
+    @GetMapping("/requestable")
+    public List<ProductService.ProductView> listRequestable(
+            @RequestParam(required = false) String search
+    ) {
+        // Dipakai halaman user: hanya produk yang bisa diminta
+        return productService.listRequestable(search);
     }
 
     @GetMapping("/low-stock")
