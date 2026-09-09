@@ -7,7 +7,13 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "products")
+@Table(
+        name = "products",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_products_sku_division",
+                columnNames = {"sku", "division_id"}
+        )
+)
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Product {
 
@@ -15,7 +21,8 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    /** SKU boleh sama di divisi berbeda, tetapi harus unik di divisi yang sama. */
+    @Column(nullable = false)
     private String sku;
 
     @Column(nullable = false)
@@ -25,6 +32,11 @@ public class Product {
     @JoinColumn(name = "category_id")
     private Category category;
 
+    /** Pemilik stok/barang. Null hanya untuk data legacy sebelum POC. */
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "division_id")
+    private Division division;
+
     @Column(nullable = false)
     private String unit;            // unit, box, pcs
 
@@ -32,12 +44,12 @@ public class Product {
     @Builder.Default
     private BigDecimal price = BigDecimal.ZERO;
 
-    /** Stok fisik berjalan (cache). Sumber kebenaran = total stock_movements. */
+    /** Stok fisik berjalan untuk produk pada divisi ini. */
     @Column(nullable = false)
     @Builder.Default
     private Integer stock = 0;
 
-    /** Ambang batas untuk peringatan "menipis". */
+    /** Ambang batas peringatan "menipis" untuk divisi ini. */
     @Column(nullable = false)
     @Builder.Default
     private Integer minStock = 0;
