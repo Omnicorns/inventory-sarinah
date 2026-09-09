@@ -48,7 +48,7 @@ public class AdjustmentService {
     public MovementView adjust(AuthUser me, AdjustRequest dto) {
         if (dto.quantity() == null || dto.quantity() < 0)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Jumlah tidak valid");
-        Product p = productService.find(dto.productId());
+        Product p = productService.findAccessible(me, dto.productId());
         int delta = switch (dto.type()) {
             case TAMBAH -> dto.quantity();
             case KURANGI -> -dto.quantity();
@@ -65,13 +65,20 @@ public class AdjustmentService {
     public MovementView incoming(AuthUser me, IncomingRequest dto) {
         if (dto.quantity() == null || dto.quantity() <= 0)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Jumlah harus > 0");
-        Product p = productService.find(dto.productId());
+        Product p = productService.findAccessible(me, dto.productId());
         String reason = "Barang masuk" + (dto.note() != null && !dto.note().isBlank() ? " - " + dto.note() : "");
         return toView(stockService.record(p, MovementType.MASUK, dto.quantity(), reason, null, user(me)));
     }
 
-    public List<MovementView> recent() {
-        return movementRepo.findTop20ByOrderByCreatedAtDesc().stream().map(this::toView).toList();
+    public List<MovementView> recent(AuthUser me) {
+        return movementRepo.findTop20ByOrderByCreatedAtDesc().stream()
+                .filter(m -> {
+                    if (me.role() == Role.ADMIN && me.division() == null) return true;
+                    Product p = m.getProduct();
+                    return me.division() != null && p.getDivision() != null
+                            && me.division().equalsIgnoreCase(p.getDivision().getName());
+                })
+                .map(this::toView).toList();
     }
 
     public List<MovementView> byProduct(Long productId) {
