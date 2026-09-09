@@ -34,9 +34,9 @@ public class StockController {
         return adjustmentService.incoming(me, body);
     }
 
-    /** 20 pergerakan stok terbaru. */
+    /** 20 pergerakan stok terbaru sesuai scope divisi user. */
     @GetMapping("/movements")
-    public List<AdjustmentService.MovementView> movements() {
-        return adjustmentService.recent();
+    public List<AdjustmentService.MovementView> movements(@AuthenticationPrincipal AuthUser me) {
+        return adjustmentService.recent(me);
     }
 }
