@@ -39,7 +39,7 @@ public class DataSeeder implements CommandLineRunner {
         userRepo.save(User.builder()
                 .name("Admin Gudang").email("admin@stokku.test")
                 .passwordHash(encoder.encode("password")).role(Role.ADMIN)
-                .division(null).build());                    // admin pusat, lintas divisi
+                .division(null).build());
         userRepo.save(User.builder()
                 .name("Budi Santoso").email("budi@stokku.test")
                 .passwordHash(encoder.encode("password")).role(Role.STAFF)
@@ -56,22 +56,27 @@ public class DataSeeder implements CommandLineRunner {
         Category elektronik = categoryRepo.save(Category.builder().name("Elektronik").build());
         Category aksesoris = categoryRepo.save(Category.builder().name("Aksesoris").build());
 
+        // POC: SKU yang sama dapat mempunyai stok berbeda di masing-masing divisi.
         productRepo.save(Product.builder().sku("SKU-1001").name("Kabel HDMI 2m")
-                .category(aksesoris).unit("unit").price(new BigDecimal("45000"))
-                .stock(142).minStock(20).build());
+                .category(aksesoris).division(ga).unit("unit").price(new BigDecimal("45000"))
+                .stock(40).minStock(10).build());
+        productRepo.save(Product.builder().sku("SKU-1001").name("Kabel HDMI 2m")
+                .category(aksesoris).division(retail).unit("unit").price(new BigDecimal("45000"))
+                .stock(15).minStock(5).build());
+        productRepo.save(Product.builder().sku("SKU-1001").name("Kabel HDMI 2m")
+                .category(aksesoris).division(ops).unit("unit").price(new BigDecimal("45000"))
+                .stock(87).minStock(20).build());
+
         productRepo.save(Product.builder().sku("SKU-1042").name("Keyboard mekanik")
-                .category(elektronik).unit("unit").price(new BigDecimal("420000"))
+                .category(elektronik).division(ga).unit("unit").price(new BigDecimal("420000"))
                 .stock(8).minStock(10).build());
         productRepo.save(Product.builder().sku("SKU-1108").name("Mouse wireless")
-                .category(elektronik).unit("unit").price(new BigDecimal("95000"))
+                .category(elektronik).division(retail).unit("unit").price(new BigDecimal("95000"))
                 .stock(0).minStock(10).build());
         productRepo.save(Product.builder().sku("SKU-1205").name("Powerbank 10000mAh")
-                .category(elektronik).unit("unit").price(new BigDecimal("185000"))
+                .category(elektronik).division(ops).unit("unit").price(new BigDecimal("185000"))
                 .stock(76).minStock(15).build());
-        productRepo.save(Product.builder().sku("SKU-1320").name("Adaptor USB-C")
-                .category(aksesoris).unit("unit").price(new BigDecimal("65000"))
-                .stock(5).minStock(10).build());
 
-        System.out.println(">> Seed: admin@stokku.test (ADMIN), budi@ (Operasional), sari@ (GA), rudi@ (Retail) — password: password");
+        System.out.println(">> Seed POC division stock: admin pusat + GA/Retail/Operasional — password: password");
     }
 }
