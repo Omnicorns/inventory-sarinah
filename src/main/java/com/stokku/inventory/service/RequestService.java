@@ -12,7 +12,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,9 +35,8 @@ public class RequestService {
         this.stockService = stockService;
     }
 
-    // ---- DTOs ----
     public record Line(Long productId, Integer qty) {}
-    public record CreateRequest(String purpose, LocalDate neededDate, List<Line> items) {}  // divisi otomatis dari user
+    public record CreateRequest(String purpose, LocalDate neededDate, List<Line> items) {}
     public record ApprovedLine(Long requestItemId, Integer approvedQty) {}
     public record ApproveRequest(List<ApprovedLine> items) {}
     public record RejectRequest(String reason) {}
@@ -68,6 +66,16 @@ public class RequestService {
                 r.getRejectReason(), r.getCreatedAt(), lines);
     }
 
+    private void validateProductDivision(User requester, Product p) {
+        if (requester.getDivision() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User pemohon belum memiliki divisi");
+        }
+        if (p.getDivision() == null || !requester.getDivision().getId().equals(p.getDivision().getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Barang " + p.getName() + " bukan milik divisi " + requester.getDivisionName());
+        }
+    }
+
     @Transactional
     public RequestView create(AuthUser me, CreateRequest dto) {
         if (dto.items() == null || dto.items().isEmpty())
@@ -77,7 +85,7 @@ public class RequestService {
         ItemRequest req = ItemRequest.builder()
                 .code("TMP")
                 .requester(requester)
-                .division(requester.getDivisionName())   // selalu dari master, bukan input bebas
+                .division(requester.getDivisionName())
                 .purpose(dto.purpose())
                 .neededDate(dto.neededDate())
                 .status(RequestStatus.MENUNGGU)
@@ -90,7 +98,9 @@ public class RequestService {
             if (line.qty() == null || line.qty() <= 0)
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Jumlah harus > 0");
             Product p = productRepo.findById(line.productId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Produk tidak ditemukan: " + line.productId()));
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                            "Produk tidak ditemukan: " + line.productId()));
+            validateProductDivision(requester, p);
             itemRepo.save(RequestItem.builder()
                     .request(req).product(p).requestedQty(line.qty()).approvedQty(0).build());
         }
@@ -99,12 +109,12 @@ public class RequestService {
 
     public List<RequestView> list(AuthUser me) {
         List<ItemRequest> rows;
-        if (me.role() == Role.ADMIN) {
-            rows = requestRepo.findAllByOrderByCreatedAtDesc();                 // admin: semua divisi
+        if (me.role() == Role.ADMIN && me.division() == null) {
+            rows = requestRepo.findAllByOrderByCreatedAtDesc();
         } else if (me.division() != null) {
-            rows = requestRepo.findByDivisionIgnoreCaseOrderByCreatedAtDesc(me.division()); // se-divisi
+            rows = requestRepo.findByDivisionIgnoreCaseOrderByCreatedAtDesc(me.division());
         } else {
-            rows = requestRepo.findByRequesterIdOrderByCreatedAtDesc(me.id()); // tanpa divisi: miliknya saja
+            rows = requestRepo.findByRequesterIdOrderByCreatedAtDesc(me.id());
         }
         return rows.stream().map(this::toView).toList();
     }
@@ -113,16 +123,24 @@ public class RequestService {
         ItemRequest r = requestRepo.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Permintaan tidak ditemukan"));
         boolean owner = r.getRequester().getId().equals(me.id());
-        boolean sameDivision = me.division() != null
-                && me.division().equalsIgnoreCase(r.getDivision());
-        if (me.role() != Role.ADMIN && !owner && !sameDivision)
+        boolean sameDivision = me.division() != null && me.division().equalsIgnoreCase(r.getDivision());
+        boolean centralAdmin = me.role() == Role.ADMIN && me.division() == null;
+        if (!centralAdmin && !owner && !sameDivision)
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bukan permintaan divisi Anda");
         return toView(r);
+    }
+
+    private void validateAdminRequestScope(AuthUser me, ItemRequest r) {
+        if (me.role() == Role.ADMIN && me.division() == null) return;
+        if (me.division() == null || !me.division().equalsIgnoreCase(r.getDivision())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permintaan bukan milik divisi Anda");
+        }
     }
 
     @Transactional
     public RequestView approve(AuthUser me, Long id, ApproveRequest dto) {
         ItemRequest r = mustBe(id, RequestStatus.MENUNGGU);
+        validateAdminRequestScope(me, r);
         User admin = currentUser(me);
 
         Map<Long, Integer> approvals = (dto != null && dto.items() != null)
@@ -150,6 +168,7 @@ public class RequestService {
     @Transactional
     public RequestView reject(AuthUser me, Long id, RejectRequest dto) {
         ItemRequest r = mustBe(id, RequestStatus.MENUNGGU);
+        validateAdminRequestScope(me, r);
         r.setStatus(RequestStatus.DITOLAK);
         r.setApprovedBy(currentUser(me));
         r.setRejectReason(dto != null ? dto.reason() : null);
@@ -157,10 +176,10 @@ public class RequestService {
         return toView(r);
     }
 
-    /** Serah-terima: stok fisik berkurang + struk terbit. */
     @Transactional
     public IssueSlipService.SlipView deliver(AuthUser me, Long id, IssueSlipService slipService) {
         ItemRequest r = mustBe(id, RequestStatus.DISETUJUI);
+        validateAdminRequestScope(me, r);
         User admin = currentUser(me);
 
         List<RequestItem> items = itemRepo.findByRequestId(id);
