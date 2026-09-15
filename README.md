@@ -4,8 +4,8 @@ REST API untuk manajemen inventory internal dengan dua peran: **admin** (petugas
 dan **staff** (pemohon). Stok dikelola lewat *ledger* pergerakan stok, dengan alur
 permintaan → persetujuan → serah-terima → struk.
 
-Dibangun dengan **Spring Boot 3.3 + Spring Data JPA + Spring Security (JWT)**.
-Default pakai **H2 in-memory** supaya langsung jalan tanpa setup database.
+Dibangun dengan **Spring Boot 3.3 + Spring Data JPA + Spring Security (JWT)**
+dan UI React di folder `frontend`.
 
 ## Menjalankan
 
@@ -15,11 +15,19 @@ Butuh **JDK 17+** dan **Maven**.
 mvn spring-boot:run
 ```
 
-API jalan di `http://localhost:8080`. H2 console: `http://localhost:8080/h2-console`
-(JDBC URL: `jdbc:h2:mem:stokku`, user `sa`, password kosong).
+API jalan di `http://localhost:8042`. Konfigurasi PostgreSQL diambil dari environment
+`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME`, dan `DB_PASSWORD`.
 
-Pindah ke MySQL: edit `src/main/resources/application.yml` (blok MySQL sudah disiapkan,
-tinggal di-uncomment) dan aktifkan dependency MySQL di `pom.xml`.
+Untuk menjalankan UI saat development:
+
+```bash
+cd frontend
+npm install
+npm start
+```
+
+Untuk memperbarui UI yang disajikan Spring Boot, jalankan `npm run build`, lalu salin
+isi `frontend/build/` ke `src/main/resources/static/`.
 
 ## Akun default (di-seed saat pertama jalan)
 
@@ -46,7 +54,7 @@ Auth
 - `GET  /api/auth/me` — profil sendiri
 
 Produk & kategori
-- `GET  /api/products?search=` — daftar + stok tersedia + status (AMAN/MENIPIS/HABIS)
+- `GET  /api/products?search=` — daftar sesuai scope divisi + stok tersedia + status
 - `GET  /api/products/low-stock`
 - `GET  /api/products/{id}` · `GET /api/products/{id}/movements`
 - `POST /api/products` *(admin)* · `PATCH /api/products/{id}` *(admin)*
@@ -84,10 +92,13 @@ User & Divisi
 
 Divisi adalah master data (`divisions`); user terikat ke satu divisi (admin pusat boleh tanpa divisi).
 Nama divisi dibawa di dalam JWT, dan penegakan akses terjadi di service:
+- Produk dan pergerakan stok hanya terlihat untuk divisi user; admin pusat melihat semua divisi.
+- SKU boleh sama antar divisi, tetapi unik di dalam divisi yang sama.
+- Admin pusat memilih `divisionId` saat membuat produk; akun berdvisi otomatis memakai divisinya sendiri.
 - `GET /api/requests` — ADMIN melihat semua; user lain hanya melihat permintaan **se-divisinya**.
 - `GET /api/requests/{id}` — 403 jika bukan admin, bukan pemilik, dan beda divisi.
 - Saat membuat permintaan, divisi **selalu diambil dari profil user** (bukan input bebas) agar tidak bisa dipalsukan.
-Stok & approval tetap terpusat di admin gudang (satu gudang untuk semua divisi).
+Stok, penyesuaian, permintaan, dan serah-terima dijaga agar tidak melintasi scope divisi.
 
 Akun seed: admin@stokku.test (ADMIN), budi@ (Operasional), sari@ (GA), rudi@ (Retail) — password `password`.
 
